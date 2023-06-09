@@ -188,6 +188,10 @@ fn test_operator_precedence_parsing() {
             "3 + 4 * 5 == 3 * 1 + 4 * 5",
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
         ),
+        ("3 > 5 == false", "((3 > 5) == false)"),
+        ("3 < 5 == true", "((3 < 5) == true)"),
+        ("(3 < 5) == true", "((3 < 5) == true)"),
+        ("a * (b / c)", "(a * (b / c))"),
     ];
 
     for (input, expected) in tests {
@@ -201,11 +205,68 @@ fn test_operator_precedence_parsing() {
             for error in &parser.errors {
                 println!("parser error: {}", error);
             }
-            panic!("parser has {} errors. testcase: {}", parser.errors.len(), input);
+            panic!(
+                "parser has {} errors. testcase: {}",
+                parser.errors.len(),
+                input
+            );
         }
-    
 
         let actual = program.to_string();
         assert_eq!(actual, expected, "expected={}, got={}", expected, actual);
+    }
+}
+
+fn test_boolean_expression(expr: &Expression, expect_value: &bool) {
+    match expr {
+        Expression::BooleanExpression(b) => {
+            assert_eq!(b, expect_value, "value not '{}'. got={}", expect_value, b)
+        }
+        _ => panic!("expr not Expression::BooleanExpression. got={}", expr),
+    }
+}
+
+#[test]
+fn test_parse_boolean_expression() {
+    let tests = vec![("true;", true), ("false;", false)];
+
+    for (input, expected) in tests {
+        let program = setup_and_validate(input, 1);
+
+        let stmt = program.statments.first().unwrap();
+
+        match stmt {
+            Statement::ExpressionStatement(expr) => test_boolean_expression(expr, &expected),
+            _ => panic!("stmt not Statement::ExpressionStatement. got={}", stmt),
+        }
+    }
+}
+
+#[test]
+fn test_parse_infix_boolean_expressions() {
+    let tests = vec![
+        ("true == false;", true, "==", false),
+        ("true != false;", true, "!=", false),
+        ("false == false;", false, "==", false),
+    ];
+
+    for (input, first, op, second) in tests {
+        let program = setup_and_validate(input, 1);
+
+        let stmt = program.statments.first().unwrap();
+
+        match stmt {
+            Statement::ExpressionStatement(expr) => match expr {
+                Expression::InfixExpression { left, op_token, right } => {
+                    test_boolean_expression(left, &first);
+                    
+                    assert_eq!(op_token.to_string(), op, "op_token not '{}'. got={}", op, op_token);
+                    
+                    test_boolean_expression(right, &second);
+                }
+                _ => panic!("expr not Expression::BooleanExpression. got={}", expr),
+            },
+            _ => panic!("stmt not Statement::ExpressionStatement. got={}", stmt),
+        }
     }
 }

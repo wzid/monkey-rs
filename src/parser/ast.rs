@@ -34,6 +34,12 @@ pub enum Expression {
         op_token: Token,
         right: Box<Expression>,
     },
+    BooleanExpression(bool),
+    IfExpression {
+        condition: Box<Expression>,
+        consequence: Box<Statement>,
+        alternative: Option<Box<Statement>>,
+    },
 }
 
 
@@ -47,6 +53,14 @@ impl Display for Expression {
             }
             Expression::InfixExpression { left, op_token, right } => {
                 write!(f, "({} {} {})", left, op_token, right)
+            },
+            Expression::BooleanExpression(value) => write!(f, "{}", value),
+            Expression::IfExpression { condition, consequence, alternative } => {
+                write!(f, "if {} {}", condition, consequence)?;
+                if let Some(alt) = alternative {
+                    write!(f, " else {}", alt)?;
+                }
+                Ok(())
             }
         }
     }

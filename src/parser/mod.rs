@@ -107,7 +107,9 @@ impl<'a> Parser<'a> {
         match &self.curr_token {
             Token::Ident(name) => Some(self.parse_identifier(name.clone())),
             Token::Int(i) => Some(self.parse_integer(*i)),
+            token![TRUE] | token![FALSE] => Some(self.parse_boolean_expression()),
             token![!] | token![-] => self.parse_prefix_expression(),
+            token!['('] => self.parse_grouped_expression(),
             _ => None,
         }
     }
@@ -237,4 +239,22 @@ impl<'a> Parser<'a> {
             return None;
         }
     }
+
+    fn parse_boolean_expression(&self) -> Expression {
+        Expression::BooleanExpression(self.is_curr_token(token![TRUE]))
+    }
+
+    fn parse_grouped_expression(&mut self) -> Option<Expression> {
+        self.advance_tokens();
+
+        let expr = self.parse_expression(Precedence::Lowest);
+
+        // If it does not end with a ')', then we have an error
+        if !self.advance_if_expected(token![')']) {
+            return None;
+        }
+
+        expr
+    }
+
 }
