@@ -1,6 +1,6 @@
 use std::io::{stdout, stdin, Write};
 
-use monkey_rs::{lexer, token::Token};
+use monkey_rs::{lexer, token};
 extern crate monkey_rs;
 
 use lexer::Lexer;
@@ -25,10 +25,9 @@ fn print_token_input() {
 
     let mut lexer = Lexer::new(input.as_str());
 
-
     loop {
         match lexer.next_token() {
-            Token::Eof => break,
+            token![EOF] => break,
             token => println!("{:?}", token)
         }
     }

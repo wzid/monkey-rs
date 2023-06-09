@@ -1,66 +1,53 @@
+use std::fmt::Display;
+
 use crate::token::Token;
 
-pub struct Node {
-    kind: NodeType
+#[derive(Debug, Clone, PartialEq)]
+pub enum Statement {
+    LetStatement { ident: Token, value: Option<Expression> },
+    ReturnStatement(Option<Expression>),
+    ExpressionStatement(Expression),
 }
 
-#[derive(PartialEq)]
-pub enum NodeType {
-    Root,
-    Stmt(Statement),
-    Expr(Expression),
-}
-
-#[derive(PartialEq, Clone)]
-pub struct Statement {
-    pub kind: StatementType
-}
-
-#[derive(PartialEq, Clone)]
-pub enum StatementType {
-    // Let token, Identifer struct and the optional expression
-    LetStatment(Token, Identifier, Option<Expression>),
-}
-
-impl Statement {
-    pub fn new(kind: StatementType) -> Self {
-        Statement { kind }
-    }
-
-    pub fn from(kind: Option<StatementType>) -> Option<Statement> {
-        kind.map(Self::new)
+impl Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::LetStatement { ident, value } => {
+                write!(f, "let {} = {};", ident, value.as_ref().unwrap())
+            }
+            Statement::ReturnStatement(value) => write!(f, "return {};", value.as_ref().unwrap()),
+            Statement::ExpressionStatement(value) => write!(f, "{}", value),
+        }
     }
 }
 
-#[derive(PartialEq, Clone)]
-pub struct Expression {
-    pub kind: ExpressionType 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Expression {
+    IntExpression(i64),
+    IdentifierExpression(String),
+    PrefixExpression {
+        op_token: Token,
+        right: Box<Expression>,
+    },
+    InfixExpression {
+        left: Box<Expression>,
+        op_token: Token,
+        right: Box<Expression>,
+    },
 }
 
 
-#[derive(PartialEq, Clone)]
-pub enum ExpressionType {
-
-}
-
-#[derive(PartialEq, Clone)]
-pub struct Identifier {
-    pub token: Token, // Token::Ident(string name)
-}
-
-impl Identifier {
-    pub fn new(token: Token) -> Self {
-        Identifier { token }
-    }
-
-    pub fn new_from_value(value : String) -> Self {
-        Identifier { token: Token::Ident(value) }
-    }
-
-    pub fn get_name(&self) -> Option<String> {
-        match &self.token {
-            Token::Ident(s) => Some(s.clone()),
-            _ => None
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::IntExpression(value) => write!(f, "{}", value),
+            Expression::IdentifierExpression(name) => write!(f, "{}", name),
+            Expression::PrefixExpression { op_token, right } => {
+                write!(f, "({}{})", op_token, right)
+            }
+            Expression::InfixExpression { left, op_token, right } => {
+                write!(f, "({} {} {})", left, op_token, right)
+            }
         }
     }
 }
