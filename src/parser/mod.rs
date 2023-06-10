@@ -13,7 +13,7 @@ use ast::{Expression, Statement};
 
 use precedence::Precedence;
 
-struct Parser<'a> {
+pub struct Parser<'a> {
     lexer: Lexer<'a>,
     curr_token: Token,
     next_token: Token,
@@ -22,7 +22,7 @@ struct Parser<'a> {
 
 #[allow(dead_code)]
 impl<'a> Parser<'a> {
-    fn new(lexer: Lexer<'a>) -> Self {
+    pub fn new(lexer: Lexer<'a>) -> Self {
         let mut p = Parser {
             lexer,
             curr_token: token![ILLEGAL],
@@ -42,7 +42,7 @@ impl<'a> Parser<'a> {
         self.next_token = self.lexer.next_token();
     }
 
-    fn parse_program(&mut self) -> Program {
+    pub fn parse_program(&mut self) -> Program {
         let mut program = Program::default();
 
         while self.curr_token != token![EOF] {
@@ -110,6 +110,8 @@ impl<'a> Parser<'a> {
             token![TRUE] | token![FALSE] => Some(self.parse_boolean_expression()),
             token![!] | token![-] => self.parse_prefix_expression(),
             token!['('] => self.parse_grouped_expression(),
+            token![IF] => self.parse_if_expression(),
+            token![FN] => self.parse_function_expression(),
             _ => None,
         }
     }
@@ -127,6 +129,10 @@ impl<'a> Parser<'a> {
             | token![>] => {
                 self.advance_tokens();
                 self.parse_infix_expression(left.clone())
+            }
+            token!['('] => {
+                self.advance_tokens();
+                self.parse_call_expression(left.clone())
             }
             _ => None,
         }
@@ -146,7 +152,7 @@ impl<'a> Parser<'a> {
         }
 
         self.report_error(format!(
-            "expected next token to be {:?}, got {:?} instead",
+            "expected next token to be {}, got {} instead",
             token, self.next_token
         ));
         false
@@ -165,9 +171,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_let_statement(&mut self) -> Option<Statement> {
-        let peek_token = self.next_token.clone();
-
-        let identifier = match peek_token {
+        // Make sure we have an identifier after the let keyword
+        let identifier = match &self.next_token {
             Token::Ident(_s) => {
                 self.advance_tokens();
                 self.curr_token.clone()
@@ -179,24 +184,36 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        // TODO:
-        while !self.is_curr_token(token![;]) {
-            self.advance_tokens();
-        }
+        // Advance past the '='
+        self.advance_tokens();
 
-        Some(Statement::LetStatement {
-            ident: identifier,
-            value: None,
-        })
+        // Parse the expression
+        if let Some(value) = self.parse_expression(Precedence::Lowest) {
+            if self.is_next_token(token![;]) {
+                self.advance_tokens();
+            }
+
+            return Some(Statement::LetStatement {
+                ident: identifier,
+                value,
+            });
+        } else {
+            return None;
+        }
     }
 
     fn parse_return_statement(&mut self) -> Option<Statement> {
-        // TODO: this will be the expression
-        while !self.is_curr_token(token![;]) {
-            self.advance_tokens();
-        }
+        // Advance past the return keyword
+        self.advance_tokens();
 
-        Some(Statement::ReturnStatement(None))
+        // Parse the expression
+        if let Some(value) = self.parse_expression(Precedence::Lowest) {
+            if self.is_next_token(token![;]) {
+                self.advance_tokens();
+            }
+            return Some(Statement::ReturnStatement(value));
+        }
+        None
     }
 
     fn parse_identifier(&mut self, name: String) -> Expression {
@@ -257,4 +274,145 @@ impl<'a> Parser<'a> {
         expr
     }
 
+    fn parse_if_expression(&mut self) -> Option<Expression> {
+        self.advance_tokens();
+
+        let condition = self.parse_expression(Precedence::Lowest);
+
+        if !self.advance_if_expected(token!['{']) {
+            return None;
+        }
+
+        let consequence = self.parse_block_statement();
+
+        if self.is_next_token(token![ELSE]) {
+            // ELSE is now curr_token
+            self.advance_tokens();
+
+            // '{' is now curr_token
+            if !self.advance_if_expected(token!['{']) {
+                return None;
+            }
+
+            println!("curr_token: {:?}", self.curr_token);
+            println!("next_token: {:?}", self.next_token);
+            let alternative = self.parse_block_statement();
+
+            // // Advance past this if it was what ended the block statement
+            // if self.is_curr_token(token!['}']) {
+            //     self.advance_tokens();
+            // }
+
+            return Some(Expression::IfExpression {
+                condition: Box::new(condition.unwrap()),
+                consequence: Box::new(consequence),
+                alternative: Some(Box::new(alternative)),
+            });
+        }
+
+        Some(Expression::IfExpression {
+            condition: Box::new(condition.unwrap()),
+            consequence: Box::new(consequence),
+            alternative: None,
+        })
+    }
+
+    fn parse_block_statement(&mut self) -> Statement {
+        self.advance_tokens();
+        let mut statements = Vec::new();
+
+        while !self.is_curr_token(token!['}']) && !self.is_curr_token(token![EOF]) {
+            if let Some(stmt) = self.parse_statement() {
+                statements.push(stmt);
+            }
+
+            self.advance_tokens();
+        }
+
+        Statement::BlockStatement(statements)
+    }
+
+    fn parse_function_expression(&mut self) -> Option<Expression> {
+        if !self.advance_if_expected(token!['(']) {
+            return None;
+        }
+
+        let parameters = self.parse_function_parameters();
+
+        if !self.advance_if_expected(token!['{']) {
+            return None;
+        }
+
+        let body = self.parse_block_statement();
+
+        Some(Expression::FunctionExpression {
+            parameters: parameters.unwrap(),
+            body: Box::new(body),
+        })
+    }
+
+    fn parse_function_parameters(&mut self) -> Option<Vec<Token>> {
+        let mut identifiers = Vec::new();
+
+        if self.is_next_token(token![')']) {
+            self.advance_tokens();
+            return Some(identifiers);
+        }
+
+        // Move the first parameter into curr_token
+        self.advance_tokens();
+
+        // Add the first parameter to the list
+        identifiers.push(self.curr_token.clone());
+
+        while self.is_next_token(token![,]) {
+            self.advance_tokens();
+            self.advance_tokens();
+            identifiers.push(self.curr_token.clone());
+        }
+
+        if !self.advance_if_expected(token![')']) {
+            return None;
+        }
+
+        Some(identifiers)
+    }
+
+    fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
+        let arguments = self.parse_call_arguments();
+
+        Some(Expression::CallExpression {
+            function: Box::new(function),
+            arguments: arguments.unwrap(),
+        })
+    }
+
+    fn parse_call_arguments(&mut self) -> Option<Vec<Expression>> {
+        let mut arguments = Vec::new();
+
+        if self.is_next_token(token![')']) {
+            self.advance_tokens();
+            return Some(arguments);
+        }
+
+        // Move the first argument into curr_token
+        self.advance_tokens();
+
+        println!("curr_token: {:?}", self.curr_token);
+        println!("next_token: {:?}", self.next_token);
+        // Add the first argument to the list
+        arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
+
+        while self.is_next_token(token![,]) {
+            self.advance_tokens();
+            self.advance_tokens();
+            arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
+        }
+
+        if !self.advance_if_expected(token![')']) {
+            return None;
+        }
+
+        Some(arguments)
+    }
 }

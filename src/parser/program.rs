@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::parser::ast::Statement;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Program {
     pub statments: Vec<Statement>
 }

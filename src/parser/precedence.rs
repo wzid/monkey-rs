@@ -18,7 +18,7 @@ impl From<&Token> for Precedence {
             token![<] | token![>] => Precedence::LessGreater,
             token![+] | token![-] => Precedence::AddSubtract,
             token![*] | token![/] => Precedence::TimesDivide,
-            // Missing ! and - prefix operators
+            token!['('] => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
