@@ -294,8 +294,6 @@ impl<'a> Parser<'a> {
                 return None;
             }
 
-            println!("curr_token: {:?}", self.curr_token);
-            println!("next_token: {:?}", self.next_token);
             let alternative = self.parse_block_statement();
 
             // // Advance past this if it was what ended the block statement

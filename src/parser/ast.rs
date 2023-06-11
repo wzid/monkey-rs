@@ -2,6 +2,15 @@ use std::fmt::Display;
 
 use crate::token::Token;
 
+use super::program::Program;
+
+#[allow(dead_code)]
+pub enum Ast {
+    Program(Program),
+    Statement(Statement),
+    Expression(Box<Expression>),
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     LetStatement {
@@ -22,9 +31,7 @@ impl Display for Statement {
             Statement::ReturnStatement(value) => write!(f, "return {};", value),
             Statement::ExpressionStatement(value) => write!(f, "{}", value),
             Statement::BlockStatement(statements) => {
-                for stmt in statements {
-                    write!(f, "{}", stmt)?;
-                }
+                statements.iter().for_each(|stmt| write!(f, "{}", stmt).unwrap());
                 Ok(())
             }
         }
@@ -88,24 +95,12 @@ impl Display for Expression {
                 Ok(())
             }
             Expression::FunctionExpression { parameters, body } => {
-                write!(f, "fn(")?;
-                for (i, param) in parameters.iter().enumerate() {
-                    write!(f, "{}", param)?;
-                    if i != parameters.len() - 1 {
-                        write!(f, ", ")?;
-                    }
-                }
-                write!(f, ") {{{}}}", body)
+                let params = parameters.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(", ");
+                write!(f, "fn ({params}) {{{body}}}")
             }
             Expression::CallExpression { function, arguments } => {
-                write!(f, "{}(", function)?;
-                for (i, arg) in arguments.iter().enumerate() {
-                    write!(f, "{}", arg)?;
-                    if i != arguments.len() - 1 {
-                        write!(f, ", ")?;
-                    }
-                }
-                write!(f, ")")
+                let args = arguments.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(", ");
+                write!(f, "{function}({args})")
             }
         }
     }
