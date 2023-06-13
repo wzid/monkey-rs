@@ -19,6 +19,7 @@ pub enum Token {
     Bang,
     Asterisk,
     Slash,
+    Percent,
 
     LessThan,
     GreaterThan,
@@ -58,6 +59,7 @@ impl Display for Token {
             token![!] => write!(f, "!"),
             token![*] => write!(f, "*"),
             token![/] => write!(f, "/"),
+            token![%] => write!(f, "%"),
             token![<] => write!(f, "<"),
             token![>] => write!(f, ">"),
             token![==] => write!(f, "=="),
@@ -104,6 +106,7 @@ macro_rules! token {
     [!] => { crate::token::Token::Bang };
     [*] => { crate::token::Token::Asterisk };
     [/] => { crate::token::Token::Slash };
+    [%] => { crate::token::Token::Percent };
     [<] => { crate::token::Token::LessThan };
     [>] => { crate::token::Token::GreaterThan };
     [==] => { crate::token::Token::Equal };

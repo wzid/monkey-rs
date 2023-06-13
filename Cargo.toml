@@ -4,11 +4,14 @@ version = "0.1.0"
 edition = "2021"
 authors = ["wzid <me@cameron.rs>"]
 
+[lib]
+name = "monkey_lib"
+path = "lib/lib.rs"
 
 [[bin]]
 name = "monkey-rs"
-path = "src/bin/main.rs"
+path = "src/main.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+clap = { version = "4.3.3", features = ["derive"] }

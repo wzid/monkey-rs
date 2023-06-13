@@ -1,20 +1,30 @@
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc, cell::RefCell};
+
+use crate::parser::ast::Statement;
+
+use super::env::Enviorment;
 
 pub trait Truth {
     fn truth(&self) -> bool;
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Integer(i64),
     Boolean(bool),
-    Return(Box<Value>),
+    Return(Box<Value>), 
+    Function {
+        params: Vec<String>,
+        body: Box<Statement>, // Statement::BlockStatement
+        env: Rc<RefCell<Enviorment>>,
+    },
+    ParentFunction(String),
     Null,
 }
 
 impl Value {
     pub fn is_null(&self) -> bool {
-        self == &Value::Null
+        matches!(self, Value::Null)
     }
 }
 
@@ -47,6 +57,10 @@ impl Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Null => write!(f, "null"),
             Value::Return(v) => write!(f, "{}", v),
+            Value::Function { params, body, .. } => {
+                write!(f, "fn({}) {{\n{}\n}}", params.join(", "), body)
+            },
+            Value::ParentFunction(name) => write!(f, "let {} = fn(..?", name),
         }
     }
 }

@@ -6,7 +6,7 @@ pub enum Precedence {
     Equality,    // == or !=
     LessGreater, // < or >
     AddSubtract, // + or -
-    TimesDivide, // * or /
+    TimesDivideMod, // * or /
     Prefix,      // -X or !X
     Call,        // myFunction(X)
 }
@@ -17,7 +17,7 @@ impl From<&Token> for Precedence {
             token![==] | token![!=] => Precedence::Equality,
             token![<] | token![>] => Precedence::LessGreater,
             token![+] | token![-] => Precedence::AddSubtract,
-            token![*] | token![/] => Precedence::TimesDivide,
+            token![*] | token![/] | token![%] => Precedence::TimesDivideMod,
             token!['('] => Precedence::Call,
             _ => Precedence::Lowest,
         }

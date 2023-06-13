@@ -72,6 +72,7 @@ impl<'a> Lexer<'a> {
             b'-' => token![-],
             b'*' => token![*],
             b'/' => token![/],
+            b'%' => token![%],
             b'<' => token![<],
             b'>' => token![>],
 

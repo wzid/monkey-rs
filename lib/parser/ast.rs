@@ -58,7 +58,7 @@ pub enum Expression {
         alternative: Option<Box<Statement>>,
     },
     FunctionExpression {
-        parameters: Vec<Token>,
+        parameters: Vec<String>,
         body: Box<Statement>,
     },
     CallExpression {

@@ -123,6 +123,7 @@ impl<'a> Parser<'a> {
             | token![-]
             | token![*]
             | token![/]
+            | token![%]
             | token![==]
             | token![!=]
             | token![<]
@@ -349,7 +350,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_function_parameters(&mut self) -> Option<Vec<Token>> {
+    fn parse_function_parameters(&mut self) -> Option<Vec<String>> {
         let mut identifiers = Vec::new();
 
         if self.is_next_token(token![')']) {
@@ -361,12 +362,30 @@ impl<'a> Parser<'a> {
         self.advance_tokens();
 
         // Add the first parameter to the list
-        identifiers.push(self.curr_token.clone());
+        match &self.curr_token {
+            Token::Ident(name) => {
+                identifiers.push(name.clone());
+            }
+            _ => self.report_error(format!(
+                "Failure in parse_function_parameters. expected Token::Ident, got {} instead",
+                self.curr_token
+            )),
+        }
 
         while self.is_next_token(token![,]) {
             self.advance_tokens();
             self.advance_tokens();
-            identifiers.push(self.curr_token.clone());
+
+
+            match &self.curr_token {
+                Token::Ident(name) => {
+                    identifiers.push(name.clone());
+                }
+                _ => self.report_error(format!(
+                    "Failure in parse_function_parameters. expected Token::Ident, got {} instead",
+                    self.curr_token
+                )),
+            }
         }
 
         if !self.advance_if_expected(token![')']) {
@@ -381,7 +400,7 @@ impl<'a> Parser<'a> {
 
         Some(Expression::CallExpression {
             function: Box::new(function),
-            arguments: arguments.unwrap(),
+            arguments: arguments.unwrap_or_default(),
         })
     }
 
@@ -396,8 +415,6 @@ impl<'a> Parser<'a> {
         // Move the first argument into curr_token
         self.advance_tokens();
 
-        println!("curr_token: {:?}", self.curr_token);
-        println!("next_token: {:?}", self.next_token);
         // Add the first argument to the list
         arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
 
