@@ -2,7 +2,7 @@ use std::{fmt::Display, rc::Rc, cell::RefCell};
 
 use crate::parser::ast::Statement;
 
-use super::env::Enviorment;
+use super::env::Environment;
 
 pub trait Truth {
     fn truth(&self) -> bool;
@@ -16,9 +16,8 @@ pub enum Value {
     Function {
         params: Vec<String>,
         body: Box<Statement>, // Statement::BlockStatement
-        env: Rc<RefCell<Enviorment>>,
+        env: Rc<RefCell<Environment>>,
     },
-    ParentFunction(String),
     Null,
 }
 
@@ -53,14 +52,13 @@ impl From<i64> for Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Integer(i) => write!(f, "{}", i),
-            Value::Boolean(b) => write!(f, "{}", b),
+            Value::Integer(i) => write!(f, "{i}"),
+            Value::Boolean(b) => write!(f, "{b}"),
             Value::Null => write!(f, "null"),
-            Value::Return(v) => write!(f, "{}", v),
+            Value::Return(v) => write!(f, "{v}"),
             Value::Function { params, body, .. } => {
-                write!(f, "fn({}) {{\n{}\n}}", params.join(", "), body)
+                write!(f, "fn({}) {{\n{body}\n}}", params.join(", "))
             },
-            Value::ParentFunction(name) => write!(f, "let {} = fn(..?", name),
         }
     }
 }

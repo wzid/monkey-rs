@@ -1,8 +1,0 @@
-let x = 60;
-let y = 48;
-
-let add = fn(a, b) {
-    return a + b;
-};
-
-add(x, y);

@@ -13,10 +13,7 @@ pub enum Ast {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    LetStatement {
-        ident: Token,
-        value: Expression,
-    },
+    LetStatement { ident: Token, value: Expression },
     ReturnStatement(Expression),
     ExpressionStatement(Expression),
     BlockStatement(Vec<Statement>),
@@ -26,13 +23,17 @@ impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Statement::LetStatement { ident, value } => {
-                write!(f, "let {} = {};", ident, value)
+                write!(f, "let {ident} = {value};")
             }
-            Statement::ReturnStatement(value) => write!(f, "return {};", value),
-            Statement::ExpressionStatement(value) => write!(f, "{}", value),
+            Statement::ReturnStatement(value) => write!(f, "return {value};"),
+            Statement::ExpressionStatement(value) => write!(f, "{value}"),
             Statement::BlockStatement(statements) => {
-                statements.iter().for_each(|stmt| write!(f, "{}", stmt).unwrap());
-                Ok(())
+                let output = statements
+                    .iter()
+                    .map(|stmt| stmt.to_string())
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                write!(f, "{output}")
             }
         }
     }
@@ -70,36 +71,47 @@ pub enum Expression {
 impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expression::IntExpression(value) => write!(f, "{}", value),
-            Expression::IdentifierExpression(name) => write!(f, "{}", name),
+            Expression::IntExpression(value) => write!(f, "{value}"),
+            Expression::IdentifierExpression(name) => write!(f, "{name}"),
             Expression::PrefixExpression { op_token, right } => {
-                write!(f, "({}{})", op_token, right)
+                write!(f, "({op_token}{right})")
             }
             Expression::InfixExpression {
                 left,
                 op_token,
                 right,
             } => {
-                write!(f, "({} {} {})", left, op_token, right)
+                write!(f, "({left} {op_token} {right})")
             }
-            Expression::BooleanExpression(value) => write!(f, "{}", value),
+            Expression::BooleanExpression(value) => write!(f, "{value}"),
             Expression::IfExpression {
                 condition,
                 consequence,
                 alternative,
             } => {
-                write!(f, "if {} {{{}}}", condition, consequence)?;
+                write!(f, "if {condition} {{{consequence}}}")?;
                 if let Some(alt) = alternative {
-                    write!(f, " else {{{}}}", alt)?;
+                    write!(f, " else {{{alt}}}")?;
                 }
                 Ok(())
             }
             Expression::FunctionExpression { parameters, body } => {
-                let params = parameters.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(", ");
+                let params = parameters
+                    .iter()
+                    .map(|p| p.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
                 write!(f, "fn ({params}) {{{body}}}")
             }
-            Expression::CallExpression { function, arguments } => {
-                let args = arguments.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(", ");
+            Expression::CallExpression {
+                function,
+                arguments,
+            } => {
+                let args = arguments
+                    .iter()
+                    .map(|p| p.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
                 write!(f, "{function}({args})")
             }
         }

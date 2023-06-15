@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     parser::{
@@ -9,7 +9,7 @@ use crate::{
 };
 
 use self::value::{Truth, Value};
-use env::Enviorment;
+use env::Environment;
 
 pub mod env;
 pub mod value;
@@ -21,12 +21,20 @@ pub type EvaluatorErr = String;
 
 #[derive(Default)]
 pub struct Evaluator {
-    env: Rc<RefCell<env::Enviorment>>,
+    env: Rc<RefCell<env::Environment>>,
 }
 
 impl Evaluator {
+    pub fn new() -> Self {
+        Evaluator {
+            env: Rc::new(RefCell::new(Environment::default())),
+        }
+    }
     // Main entry point
-    pub fn eval_with_enviorment(ast: &Ast, env: Rc<RefCell<Enviorment>>) -> Result<Value, EvaluatorErr> {
+    pub fn eval_with_environment(
+        ast: &Ast,
+        env: Rc<RefCell<Environment>>,
+    ) -> Result<Value, EvaluatorErr> {
         let mut evaluator = Evaluator { env };
         match ast {
             Ast::Program(prog) => evaluator.eval_program(prog),
@@ -35,33 +43,23 @@ impl Evaluator {
         }
     }
 
-    // Entry point method with a new enviorment (no local variables set)
+    // Entry point method with a new Environment (no local variables set)
     pub fn eval(ast: &Ast) -> Result<Value, EvaluatorErr> {
-        Evaluator::eval_with_enviorment(ast, Rc::new(RefCell::new(Enviorment::default())))
+        Evaluator::eval_with_environment(ast, Rc::new(RefCell::new(Environment::default())))
+    }
+
+    pub fn eval_self(&mut self, ast: &Ast) -> Result<Value, EvaluatorErr> {
+        match ast {
+            Ast::Program(prog) => self.eval_program(prog),
+            Ast::Statement(stmt) => self.eval_statement(stmt),
+            Ast::Expression(expr) => self.eval_expression(expr),
+        }
     }
 
     fn eval_statement(&mut self, stmt: &Statement) -> Result<Value, EvaluatorErr> {
         match stmt {
             Statement::LetStatement { ident, value } => {
-                let mut value = self.eval_expression(value)?;
-
-                // This piece of code allows for recursion by putting the function expression in the enviorment
-                // if let Value::Function { params, body, env } = value {
-                //     let mut new_env = env.clone();
-                //     new_env.set(
-                //         ident.to_string(),
-                //         Value::Function {
-                //             params: params.clone(),
-                //             body: body.clone(),
-                //             env,
-                //         },
-                //     );
-                //     value = Value::Function {
-                //         params,
-                //         body,
-                //         env: new_env,
-                //     }
-                // }
+                let value = self.eval_expression(value)?;
 
                 // Set the value in the map and return the value
                 Ok(self.env.borrow_mut().set(ident.to_string(), value))
@@ -81,7 +79,7 @@ impl Evaluator {
             Expression::BooleanExpression(b) => Ok(Value::Boolean(*b)),
             Expression::IdentifierExpression(s) => self.eval_identifier(s),
             Expression::PrefixExpression { op_token, right } => {
-                let right = self.eval_expression(&right)?;
+                let right = self.eval_expression(right)?;
                 self.eval_prefix_expression(op_token, right)
             }
             Expression::InfixExpression {
@@ -89,8 +87,8 @@ impl Evaluator {
                 op_token,
                 right,
             } => {
-                let left = self.eval_expression(&left)?;
-                let right = self.eval_expression(&right)?;
+                let left = self.eval_expression(left)?;
+                let right = self.eval_expression(right)?;
                 self.eval_infix_expression(left, op_token, right)
             }
             Expression::IfExpression {
@@ -98,7 +96,7 @@ impl Evaluator {
                 consequence,
                 alternative,
             } => {
-                let condition = self.eval_expression(&condition)?;
+                let condition = self.eval_expression(condition)?;
                 self.eval_if_expression(condition, consequence, alternative.as_deref())
             }
             Expression::FunctionExpression { parameters, body } => Ok(Value::Function {
@@ -110,7 +108,7 @@ impl Evaluator {
                 function,
                 arguments,
             } => {
-                let function = self.eval_expression(&function)?;
+                let function = self.eval_expression(function)?;
 
                 // Evaluate every argument into a Vec<Value> or return an error if it happens
                 let arguments = arguments
@@ -119,7 +117,7 @@ impl Evaluator {
                     .collect::<Result<Vec<Value>, EvaluatorErr>>()?;
 
                 let result = self.apply_function(function, arguments)?;
-                
+
                 Ok(match result {
                     Value::Return(v) => *v,
                     _ => result,
@@ -140,7 +138,7 @@ impl Evaluator {
             }
         }
 
-        return Ok(stmt_value);
+        Ok(stmt_value)
     }
 
     fn eval_block(&mut self, block: &Vec<Statement>) -> Result<Value, EvaluatorErr> {
@@ -155,7 +153,7 @@ impl Evaluator {
             }
         }
 
-        return Ok(stmt_value);
+        Ok(stmt_value)
     }
 
     fn eval_prefix_expression(
@@ -237,27 +235,31 @@ impl Evaluator {
     fn apply_function(&self, func: Value, arguments: Vec<Value>) -> Result<Value, EvaluatorErr> {
         match func {
             Value::Function { params, body, env } => {
-                let function_env = self.setup_function_env(env, params, arguments);
-                let result = Evaluator::eval_with_enviorment(&Ast::Statement(*body), function_env)?;
+                let func_env = self.setup_function_env(env, params, arguments);
+
+                let result =
+                    Evaluator::eval_with_environment(&Ast::Statement(*body), func_env)?;
+
                 Ok(result)
             }
             _ => Err(format!(
-                "apply_function had an error. func is not of type Value::Function. got {}",
-                func
+                "apply_function had an error. func is not of type Value::Function. got {func}"
             )),
         }
     }
 
     fn setup_function_env(
         &self,
-        function_env: Rc<RefCell<Enviorment>>,
+        function_env: Rc<RefCell<Environment>>,
         params: Vec<String>,
         arguments: Vec<Value>,
-    ) -> Rc<RefCell<Enviorment>> {
-        let function_env = Enviorment::new_enclosed(function_env);
+    ) -> Rc<RefCell<Environment>> {
+        let function_env = Environment::new_enclosed(function_env);
 
         for (i, param) in params.iter().enumerate() {
-            function_env.borrow_mut().set(param.to_string(), arguments[i].clone());
+            function_env
+                .borrow_mut()
+                .set(param.to_string(), arguments[i].clone());
         }
 
         function_env

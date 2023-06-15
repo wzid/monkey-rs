@@ -2,9 +2,9 @@ use std::io::{stdin, stdout, Write};
 
 extern crate monkey_lib;
 use monkey_lib::{
-    eval::Evaluator,
     lexer,
-    parser::{self, ast::Ast},
+    parser::{self, program::Program},
+    Monkey,
 };
 
 use clap::Parser;
@@ -23,22 +23,30 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    let mut monkey = Monkey::default();
+
+
     if let Some(file) = args.file {
         let contents = fs::read_to_string(file).expect("Unable to find or read file");
 
-        run(contents);
+        if let Ok(program) = lex_and_parse(contents) {
+            evaluate(program, &mut monkey);
+        }
     } else {
         println!("Monkey v1.0");
         println!("REPL Mode");
-        
+
         loop {
-            let input = repl_input();
-            run(input);
+            let input = get_input();
+
+            if let Ok(program) = lex_and_parse(input) {
+                evaluate(program, &mut monkey);
+            }
         }
     }
 }
 
-fn repl_input() -> String {
+fn get_input() -> String {
     print!(">> ");
     stdout().flush().unwrap();
 
@@ -49,29 +57,33 @@ fn repl_input() -> String {
     input
 }
 
-fn run(input: String) {
+fn evaluate(program: Program, monkey: &mut Monkey) {
+    let result = monkey.eval(program);
+    match result {
+        Ok(value) => println!("{value}"),
+        Err(msg) => println!("Error: {msg}"),
+    }
+}
+
+fn lex_and_parse(input: String) -> Result<Program, ()> {
     let lexer = Lexer::new(input.as_str());
 
     let mut parser = parser::Parser::new(lexer);
 
     let program = parser.parse_program();
 
-    if parser.errors.len() != 0 {
-        print_parse_errors(&parser.errors)
-    } else {
-        let result = Evaluator::eval(&Ast::Program(program));
-
-        match result {
-            Ok(v) => println!("{}", v),
-            Err(e) => println!("Error: {}", e),
-        }
+    if !parser.errors.is_empty() {
+        print_parse_errors(&parser.errors);
+        return Err(());
     }
+
+    Ok(program)
 }
 
 fn print_parse_errors(errors: &Vec<String>) {
     println!("Woops! We ran into some monkey business here!");
     println!(" parser errors: ");
     for err in errors {
-        println!("\t{}", err);
+        println!("\t{err}");
     }
 }

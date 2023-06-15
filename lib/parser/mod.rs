@@ -198,9 +198,8 @@ impl<'a> Parser<'a> {
                 ident: identifier,
                 value,
             });
-        } else {
-            return None;
         }
+        None
     }
 
     fn parse_return_statement(&mut self) -> Option<Statement> {
@@ -253,9 +252,8 @@ impl<'a> Parser<'a> {
                 op_token,
                 right: Box::new(right),
             });
-        } else {
-            return None;
         }
+        None
     }
 
     fn parse_boolean_expression(&self) -> Expression {

@@ -51,8 +51,8 @@ impl Display for Token {
         match self {
             token![ILLEGAL] => write!(f, "ILLEGAL"),
             token![EOF] => write!(f, "EOF"),
-            Token::Ident(value) => write!(f, "{}", value),
-            Token::Int(value) => write!(f, "{}", value),
+            Token::Ident(value) => write!(f, "{value}"),
+            Token::Int(value) => write!(f, "{value}"),
             token![=] => write!(f, "="),
             token![+] => write!(f, "+"),
             token![-] => write!(f, "-"),
@@ -97,31 +97,31 @@ pub fn lookup_identifier(identifier: &str) -> Token {
 #[macro_export]
 macro_rules! token {
     [ILLEGAL] => { $crate::token::Token::Illegal };
-    [EOF] => { crate::token::Token::Eof };
-    [IDENT($val:expr)] => { crate::token::Token::Ident($val.to_string()) };
-    [INT($val:expr)] => { crate::token::Token::Int($val) };
-    [=] => { crate::token::Token::Assign };
-    [+] => { crate::token::Token::Plus };
-    [-] => { crate::token::Token::Minus };
-    [!] => { crate::token::Token::Bang };
-    [*] => { crate::token::Token::Asterisk };
-    [/] => { crate::token::Token::Slash };
-    [%] => { crate::token::Token::Percent };
-    [<] => { crate::token::Token::LessThan };
-    [>] => { crate::token::Token::GreaterThan };
-    [==] => { crate::token::Token::Equal };
-    [!=] => { crate::token::Token::NotEqual };
-    [,] => { crate::token::Token::Comma };
-    [;] => { crate::token::Token::Semicolon };
-    ['('] => { crate::token::Token::Lparen };
-    [')'] => { crate::token::Token::Rparen };
-    ['{'] => { crate::token::Token::Lbrace };
-    ['}'] => { crate::token::Token::Rbrace };
-    [FN] => { crate::token::Token::Func };
-    [LET] => { crate::token::Token::Let };
-    [TRUE] => { crate::token::Token::True };
-    [FALSE] => { crate::token::Token::False };
-    [IF] => { crate::token::Token::If };
-    [ELSE] => { crate::token::Token::Else };
-    [RETURN] => { crate::token::Token::Return };
+    [EOF] => { $crate::token::Token::Eof };
+    [IDENT($val:expr)] => { $crate::token::Token::Ident($val.to_string()) };
+    [INT($val:expr)] => { $crate::token::Token::Int($val) };
+    [=] => { $crate::token::Token::Assign };
+    [+] => { $crate::token::Token::Plus };
+    [-] => { $crate::token::Token::Minus };
+    [!] => { $crate::token::Token::Bang };
+    [*] => { $crate::token::Token::Asterisk };
+    [/] => { $crate::token::Token::Slash };
+    [%] => { $crate::token::Token::Percent };
+    [<] => { $crate::token::Token::LessThan };
+    [>] => { $crate::token::Token::GreaterThan };
+    [==] => { $crate::token::Token::Equal };
+    [!=] => { $crate::token::Token::NotEqual };
+    [,] => { $crate::token::Token::Comma };
+    [;] => { $crate::token::Token::Semicolon };
+    ['('] => { $crate::token::Token::Lparen };
+    [')'] => { $crate::token::Token::Rparen };
+    ['{'] => { $crate::token::Token::Lbrace };
+    ['}'] => { $crate::token::Token::Rbrace };
+    [FN] => { $crate::token::Token::Func };
+    [LET] => { $crate::token::Token::Let };
+    [TRUE] => { $crate::token::Token::True };
+    [FALSE] => { $crate::token::Token::False };
+    [IF] => { $crate::token::Token::If };
+    [ELSE] => { $crate::token::Token::Else };
+    [RETURN] => { $crate::token::Token::Return };
 }
