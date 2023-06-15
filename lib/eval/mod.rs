@@ -10,8 +10,10 @@ use crate::{
 
 use self::value::{Truth, Value};
 use env::Environment;
+use funcs::get_function;
 
 pub mod env;
+pub mod funcs;
 pub mod value;
 
 #[cfg(test)]
@@ -123,6 +125,7 @@ impl Evaluator {
                     _ => result,
                 })
             }
+            Expression::StringExpression(s) => Ok(Value::String(s.to_string())),
         }
     }
 
@@ -182,8 +185,13 @@ impl Evaluator {
             }
             (Value::Boolean(l), token![==], Value::Boolean(r)) => Ok((l == r).into()),
             (Value::Boolean(l), token![!=], Value::Boolean(r)) => Ok((l != r).into()),
+
+            // String concatenation
+            (Value::String(l), token![+], Value::String(r)) => Ok((l.to_owned() + r).into()),
+            (Value::String(l), token![+], Value::Integer(r)) => Ok((format!("{l}{r}")).into()),
+            (Value::Integer(l), token![+], Value::String(r)) => Ok((format!("{l}{r}")).into()),
             _ => Err(format!(
-                "Invalid infix expression!\n\t({left} {operator} {right})"
+                "Invalid infix expression!\n({left} {operator} {right})"
             )),
         }
     }
@@ -229,11 +237,22 @@ impl Evaluator {
     }
 
     fn eval_identifier(&self, name: &String) -> Result<Value, EvaluatorErr> {
-        self.env.borrow().get(name)
+        let env_indent = self.env.borrow().get(name);
+
+        // If could not find the identifier in the current environment then check the built in functions
+        if let Err(msg) = env_indent {
+            return match get_function(name) {
+                Some(func) => Ok(Value::BuiltInFunction { func }),
+                None => Err(msg),
+            };
+        }
+
+        env_indent
     }
 
     fn apply_function(&self, func: Value, arguments: Vec<Value>) -> Result<Value, EvaluatorErr> {
         match func {
+            Value::BuiltInFunction { func } => func(arguments),
             Value::Function { params, body, env } => {
                 let func_env = self.setup_function_env(env, params, arguments);
 
@@ -243,7 +262,7 @@ impl Evaluator {
                 Ok(result)
             }
             _ => Err(format!(
-                "apply_function had an error. func is not of type Value::Function. got {func}"
+                "apply_function had an error. func is not of type Value::Function or Value::BuiltInFunction. got {func}"
             )),
         }
     }

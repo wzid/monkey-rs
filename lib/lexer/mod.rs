@@ -91,6 +91,7 @@ impl<'a> Lexer<'a> {
             // Since we modify the position in this statement and the statement above we do not
             // want to to modify it again after the switch statement with the extra `self.read_char`
             b if b.is_ascii_digit() => return self.number(),
+            b'"' => self.read_string(),
             _ => token![ILLEGAL],
         };
 
@@ -119,6 +120,19 @@ impl<'a> Lexer<'a> {
         let int = int_str.parse::<i64>().unwrap();
 
         token![INT(int)]
+    }
+
+    fn read_string(&mut self) -> Token {
+        // go to start of string (advance past " character)
+        self.read_next_char();
+
+        let start_pos = self.pos;
+        // Loop while the character is a digit
+        self.read_while(|cha| cha != b'"');
+
+        let str = &self.input[start_pos..self.pos];
+
+        token![STR(str.to_string())]
     }
 
 }

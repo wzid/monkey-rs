@@ -53,6 +53,7 @@ pub enum Expression {
         right: Box<Expression>,
     },
     BooleanExpression(bool),
+    StringExpression(String),
     IfExpression {
         condition: Box<Expression>,
         consequence: Box<Statement>,
@@ -84,6 +85,7 @@ impl Display for Expression {
                 write!(f, "({left} {op_token} {right})")
             }
             Expression::BooleanExpression(value) => write!(f, "{value}"),
+            Expression::StringExpression(value) => write!(f, "{value}"),
             Expression::IfExpression {
                 condition,
                 consequence,

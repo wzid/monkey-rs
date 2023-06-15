@@ -205,3 +205,34 @@ fn test_function_appliction() {
         test_integer_object(evaluated, expected);
     }
 }
+
+#[test]
+fn test_strings() {
+    let input = r#"
+        let greet = fn(name, age) {
+            "Hello, " + name + "! You are " + age + " years old.";
+        };
+
+        greet("Cameron", 19);
+    "#;
+
+    let evaluated = test_eval(input);
+
+    assert_eq!(
+        evaluated.to_string(),
+        "Hello, Cameron! You are 19 years old."
+    );
+}
+
+#[test]
+fn test_built_in_funcs() {
+    let tests = vec![
+        ("len(\"\")", 0),
+        ("len(\"five\")", 4)
+    ];
+
+    for (input, expected) in tests {
+        let evaluated = test_eval(input);
+        test_integer_object(evaluated, expected);
+    }
+}

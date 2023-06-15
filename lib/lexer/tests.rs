@@ -34,7 +34,10 @@ fn test_next_token_program() {
         let add = fn(x, y) {
             x + y;
         };
-        let result = add(five, ten);"#;
+        let result = add(five, ten);
+        "foobar";
+        "foo bar";
+        "#;
 
     let tests = vec![
         token![LET],
@@ -73,6 +76,9 @@ fn test_next_token_program() {
         token![IDENT("ten".to_string())],
         token![')'],
         token![;],
+        token![STR("foobar".to_string())],
+        token![;],
+        token![STR("foo bar".to_string())],
     ];
 
     let mut lexer = Lexer::new(input);

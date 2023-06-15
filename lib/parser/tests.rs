@@ -446,3 +446,22 @@ fn test_parse_function_call() {
         _ => panic!("stmt not Statement::ExpressionStatement. got={}", stmt),
     }
 }
+
+#[test]
+fn test_parse_string_expression() {
+    let input = r#" "hello world" "#;
+
+    let program = setup_and_validate(input, 1);
+
+    let stmt = program.statments.first().unwrap();
+
+    match stmt {
+        Statement::ExpressionStatement(expr) => match expr {
+            Expression::StringExpression(s) => {
+                assert_eq!(s, "hello world", "s not '{}'. got={}", "hello world", s)
+            }
+            _ => panic!("expr not Expression::CallExpression. got={}", expr),
+        },
+        _ => panic!("stmt not Statement::ExpressionStatement. got={}", stmt),
+    }
+}

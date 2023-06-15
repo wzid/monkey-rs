@@ -11,6 +11,7 @@ pub enum Token {
     // Identifiers and literals
     Ident(String),
     Int(i64),
+    String(String),
 
     // Operators
     Assign,
@@ -53,6 +54,7 @@ impl Display for Token {
             token![EOF] => write!(f, "EOF"),
             Token::Ident(value) => write!(f, "{value}"),
             Token::Int(value) => write!(f, "{value}"),
+            Token::String(value) => write!(f, "{value}"),
             token![=] => write!(f, "="),
             token![+] => write!(f, "+"),
             token![-] => write!(f, "-"),
@@ -100,6 +102,7 @@ macro_rules! token {
     [EOF] => { $crate::token::Token::Eof };
     [IDENT($val:expr)] => { $crate::token::Token::Ident($val.to_string()) };
     [INT($val:expr)] => { $crate::token::Token::Int($val) };
+    [STR($val:expr)] => { $crate::token::Token::String($val) };
     [=] => { $crate::token::Token::Assign };
     [+] => { $crate::token::Token::Plus };
     [-] => { $crate::token::Token::Minus };

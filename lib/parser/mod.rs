@@ -107,6 +107,7 @@ impl<'a> Parser<'a> {
         match &self.curr_token {
             Token::Ident(name) => Some(self.parse_identifier(name.clone())),
             Token::Int(i) => Some(self.parse_integer(*i)),
+            Token::String(val) => Some(self.parse_string(val.clone())),
             token![TRUE] | token![FALSE] => Some(self.parse_boolean_expression()),
             token![!] | token![-] => self.parse_prefix_expression(),
             token!['('] => self.parse_grouped_expression(),
@@ -216,12 +217,16 @@ impl<'a> Parser<'a> {
         None
     }
 
-    fn parse_identifier(&mut self, name: String) -> Expression {
+    fn parse_identifier(&self, name: String) -> Expression {
         Expression::IdentifierExpression(name)
     }
 
-    fn parse_integer(&mut self, value: i64) -> Expression {
+    fn parse_integer(&self, value: i64) -> Expression {
         Expression::IntExpression(value)
+    }
+
+    fn parse_string(&self, value: String) -> Expression {
+        Expression::StringExpression(value)
     }
 
     // This function is called when we have an operator and an expression after it

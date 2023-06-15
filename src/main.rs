@@ -1,6 +1,5 @@
 use std::io::{stdin, stdout, Write};
 
-extern crate monkey_lib;
 use monkey_lib::{
     lexer,
     parser::{self, program::Program},
@@ -58,10 +57,8 @@ fn get_input() -> String {
 }
 
 fn evaluate(program: Program, monkey: &mut Monkey) {
-    let result = monkey.eval(program);
-    match result {
-        Ok(value) => println!("{value}"),
-        Err(msg) => println!("Error: {msg}"),
+    if let Err(msg) = monkey.eval(program) {
+        println!("Error: {msg}");
     }
 }
 
